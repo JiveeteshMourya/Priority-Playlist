@@ -1,21 +1,27 @@
-export const extractVideoId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
 export const extractPlaylistId = (url: string): string | null => {
-  const regExp = /[&?]list=([^&]+)/i;
+  // Handle traditional playlist URLs and watch URLs with playlist parameter
+  const regExp = /(?:list=)([^&#]+)/i;
   const match = url.match(regExp);
   return match ? match[1] : null;
 };
 
 export const validateYouTubeUrl = (url: string): boolean => {
-  const videoId = extractVideoId(url);
-  const playlistId = extractPlaylistId(url);
-  return videoId !== null || playlistId !== null;
+  try {
+    const urlObj = new URL(url);
+    return (
+      urlObj.hostname === 'www.youtube.com' || 
+      urlObj.hostname === 'youtube.com'
+    ) && extractPlaylistId(url) !== null;
+  } catch {
+    return false;
+  }
+};
+
+// We don't need this anymore since we only accept playlists
+export const extractVideoId = (url: string): string | null => {
+  return null;
 };
 
 export const isPlaylistUrl = (url: string): boolean => {
-  return extractPlaylistId(url) !== null;
+  return validateYouTubeUrl(url);
 };

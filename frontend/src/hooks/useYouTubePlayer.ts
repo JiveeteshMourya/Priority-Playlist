@@ -5,14 +5,40 @@ export const useYouTubePlayer = () => {
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
 
   useEffect(() => {
-    // Load YouTube IFrame API
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    let isMounted = true;
+    let ytPlayer: YouTubePlayer | null = null;
 
-    window.onYouTubeIframeAPIReady = () => {
-      new window.YT.Player('youtube-player', {
+    // Load YouTube IFrame API
+    const loadYouTubeAPI = () => {
+      return new Promise<void>((resolve) => {
+        if (window.YT) {
+          resolve();
+          return;
+        }
+
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = () => {
+          resolve();
+        };
+      });
+    };
+
+    const initializePlayer = async () => {
+      await loadYouTubeAPI();
+
+      if (!isMounted) return;
+
+      // Clear existing player element if it exists
+      const existingPlayer = document.getElementById('youtube-player');
+      if (existingPlayer) {
+        existingPlayer.innerHTML = '';
+      }
+
+      ytPlayer = new window.YT.Player('youtube-player', {
         height: '500',
         width: '100%',
         playerVars: {
@@ -23,16 +49,44 @@ export const useYouTubePlayer = () => {
         },
         events: {
           onReady: (event: YouTubeEvent) => {
-            setPlayer(event.target);
+            if (isMounted) {
+              setPlayer(event.target);
+              console.log('YouTube player ready');
+            }
+          },
+          onError: (event: YouTubeEvent) => {
+            console.error('YouTube Player Error:', event);
           },
         },
       });
+    };
+
+    initializePlayer().catch(error => {
+      console.error('Error initializing YouTube player:', error);
+    });
+
+    return () => {
+      isMounted = false;
+      if (ytPlayer) {
+        try {
+          ytPlayer.destroy();
+        } catch (error) {
+          console.error('Error destroying YouTube player:', error);
+        }
+      }
     };
   }, []);
 
   const loadVideo = (videoId: string) => {
     if (player) {
-      player.loadVideoById(videoId);
+      try {
+        player.loadVideoById(videoId);
+        console.log('Loading video:', videoId);
+      } catch (error) {
+        console.error('Error loading video:', error);
+      }
+    } else {
+      console.warn('YouTube player not ready yet');
     }
   };
 

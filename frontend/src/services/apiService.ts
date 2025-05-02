@@ -17,7 +17,10 @@ interface PlaylistResponse {
 
 export const getPlaylists = async (): Promise<Playlist[]> => {
   const response = await fetch(`${API_BASE_URL}/playlists`);
-  if (!response.ok) throw new Error('Failed to fetch playlists');
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch playlists');
+  }
   const data: PlaylistResponse = await response.json();
   return data.playlists;
 };
@@ -28,25 +31,51 @@ export const createPlaylist = async (name: string): Promise<Playlist> => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, videos: [] })
   });
-  if (!response.ok) throw new Error('Failed to create playlist');
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create playlist');
+  }
+  
   return response.json();
 };
 
-export const addVideoToPlaylist = async (playlistId: string, video: PlaylistItem): Promise<Playlist> => {
-  const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/videos`, {
+export const deletePlaylist = async (id: string): Promise<{ success: boolean; message: string }> => {
+  console.log('Sending delete request for playlist:', id);
+  const response = await fetch(`${API_BASE_URL}/playlists/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  const data = await response.json();
+  console.log('Delete response:', data);
+  
+  if (!response.ok) {
+    console.error('Delete playlist error:', data);
+    throw new Error(data.message || 'Failed to delete playlist');
+  }
+
+  return data;
+};
+
+export const importPlaylist = async (name: string, videos: PlaylistItem[]): Promise<Playlist> => {
+  const response = await fetch(`${API_BASE_URL}/playlists`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      videoId: video.videoId,
-      title: video.title,
-      url: `https://www.youtube.com/watch?v=${video.videoId}`,
-      priority: 0 // Adding priority field
+      name,
+      videos: videos.map(video => ({
+        videoId: video.videoId,
+        title: video.title,
+        url: video.url || `https://www.youtube.com/watch?v=${video.videoId}`
+      }))
     })
   });
   
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Failed to add video to playlist' }));
-    throw new Error(errorData.message || 'Failed to add video to playlist');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to import playlist');
   }
+  
   return response.json();
 };

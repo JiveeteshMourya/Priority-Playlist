@@ -1,62 +1,99 @@
-import { Box, TextField, Button, Paper, CircularProgress, Alert } from '@mui/material';
-import { isPlaylistUrl } from '../utils/youtubeUtils';
+import { TextField, Button, Box, Typography, Alert, CircularProgress } from '@mui/material';
+import { Add, YouTube } from '@mui/icons-material';
 
 interface PlaylistManagerProps {
   videoUrl: string;
   onVideoUrlChange: (url: string) => void;
-  onAddToPlaylist: () => Promise<void>;
+  onAddToPlaylist: () => void;
   error?: string;
-  isLoading?: boolean;
+  isLoading: boolean;
 }
 
-export const PlaylistManager = ({
+export function PlaylistManager({
   videoUrl,
   onVideoUrlChange,
   onAddToPlaylist,
   error,
-  isLoading = false,
-}: PlaylistManagerProps) => {
-  const isPlaylist = isPlaylistUrl(videoUrl);
-
+  isLoading
+}: PlaylistManagerProps) {
   return (
-    <Paper sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 1 }}
-            onClose={() => onVideoUrlChange('')}
-          >
-            {error}
-          </Alert>
-        )}
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
-            fullWidth
-            label="YouTube Video or Playlist URL"
-            value={videoUrl}
-            onChange={(e) => onVideoUrlChange(e.target.value)}
-            placeholder="Paste YouTube URL here"
-            error={!!error}
-            disabled={isLoading}
-            helperText={error || 'Enter a valid YouTube video or playlist URL'}
-          />
-          <Button
-            variant="contained"
-            onClick={onAddToPlaylist}
-            disabled={isLoading || !videoUrl.trim()}
-            sx={{ minWidth: 120 }}
-          >
-            {isLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : isPlaylist ? (
-              'Import Playlist'
-            ) : (
-              'Add to Playlist'
-            )}
-          </Button>
-        </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="h6" sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1,
+        color: 'primary.main',
+        fontWeight: 600 
+      }}>
+        <YouTube />
+        Import YouTube Playlist
+      </Typography>
+      
+      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Paste YouTube playlist URL"
+          value={videoUrl}
+          onChange={(e) => onVideoUrlChange(e.target.value)}
+          error={!!error}
+          disabled={isLoading}
+          helperText="Enter a YouTube playlist URL to import"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              },
+              '&.Mui-focused': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }
+          }}
+        />
+        <Button
+          variant="contained"
+          onClick={onAddToPlaylist}
+          disabled={!videoUrl || isLoading}
+          startIcon={isLoading ? <CircularProgress size={20} /> : <Add />}
+          sx={{
+            minWidth: { xs: '100%', sm: '150px' },
+            height: '56px',
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600
+          }}
+        >
+          {isLoading ? 'Importing...' : 'Import'}
+        </Button>
       </Box>
-    </Paper>
+      
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            borderRadius: 2,
+            '& .MuiAlert-message': {
+              width: '100%'
+            }
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      <Alert 
+        severity="info"
+        sx={{ 
+          borderRadius: 2,
+          '& .MuiAlert-message': {
+            width: '100%'
+          }
+        }}
+      >
+        Enter a YouTube playlist URL and click Import to create a new playlist with all its videos. The URL should look like: https://www.youtube.com/playlist?list=PLAYLIST_ID
+      </Alert>
+    </Box>
   );
-};
+}

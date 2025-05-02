@@ -3,6 +3,7 @@ export interface YouTubePlayer {
   pauseVideo(): void;
   loadVideoById(videoId: string): void;
   cueVideoById(videoId: string): void;
+  destroy(): void;
 }
 
 export interface YouTubeEvent {
@@ -19,6 +20,7 @@ export interface YouTubePlayerVars {
 export interface PlaylistItem {
   videoId: string;
   title: string;
+  url?: string; // Making it optional since we can construct it from videoId
 }
 
 declare global {
